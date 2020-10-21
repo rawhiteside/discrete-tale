@@ -12,10 +12,9 @@ import javax.swing.BoxLayout
 import javax.swing.Box
 import javax.swing.WindowConstants
 
-
 class MainFrame < JFrame
   include java.awt.event.ActionListener
-  ANNOTATION_FILE_NAME = File.join('ore-stone-pics', 'annotation.yaml')
+  ANNOTATION_FILE_NAME = File.join('orestone-pics', 'annotation.yaml')
   
   def initialize
     super("Annotate ore stones")
@@ -43,21 +42,25 @@ class MainFrame < JFrame
 
 
   def load_next_image
-    @image_file = @image_files.shift
-    @filename_label.text = @image_file
-    return nil unless @image_file
-    image = ImageIO.read java.io.File.new(@image_file)
-    0.upto(image.width - 1) do |x|
-      0.upto(image.height - 1) do |y|
-        if (image.getRGB(x, y) & 0xffffff) == 0
-          image.setRGB(x, y, 0xFFFFFF)
+    loop do
+      @image_file = @image_files.shift
+      @filename_label.text = @image_file
+      return nil unless @image_file
+      next if @annotations[@image_file]
+      image = ImageIO.read java.io.File.new(@image_file)
+      0.upto(image.width - 1) do |x|
+        0.upto(image.height - 1) do |y|
+          if (image.getRGB(x, y) & 0xffffff) == 0
+            image.setRGB(x, y, 0xFFFFFF)
+          end
         end
       end
+      icon = ImageIcon.new(image)
+      @icon_label.icon = icon
+      pack
+      return true
     end
-    icon = ImageIcon.new(image)
-    @icon_label.icon = icon
-    pack
-    return true
+    nil
   end
 
   
@@ -85,8 +88,6 @@ class MainFrame < JFrame
       return {}
     end
   end
-
-  
 
   def add_combo_boxes(panel)
     colors = ['red', 'blue', 'green', 'cyan', 'magenta', 'yellow', 'black'].sort
@@ -136,8 +137,12 @@ class MainFrame < JFrame
   end
 
   def update_annotation
+    value = {}
     @combos.each do |combo|
+      value[combo.action_command] = combo.selected_item
     end
+    @annotations[@image_file] = value
+    File.open(ANNOTATION_FILE_NAME, 'w'){|f| YAML.dump(@annotations, f)}
   end
   
 
@@ -148,9 +153,8 @@ class MainFrame < JFrame
       dispose
     when 'Next'
       update_annotation
-      load_next_image
+      dispose unless load_next_image
     when 'Skip'
-      puts 'skip'
       load_next_image
     end
   end
