@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Yeah, semicolons.  weird.  It's a windows thing.  export
+echo $1
+CLASSPATH=".;../jr;../jr/jruby-complete-1.7.21.jar;../jr/foa.jar;../jr/snakeyaml-1.9.jar" jruby $1
