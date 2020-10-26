@@ -1,8 +1,11 @@
 require 'java'
-require 'yaml'
 
-ANNOTATION_FILE_NAME = File.join('orestone-pics', 'annotation.yaml')
-notes = YAML.load_file(ANNOTATION_FILE_NAME)
+# XXX Figure out load-path stuff!
+require File.expand_path('annotations.rb')
+
+
+
+notes = Annotations.new
 
 stats = {
   'Stone color' => Hash.new(0),
@@ -11,8 +14,8 @@ stats = {
   'Gem shape' => Hash.new(0),
 }
 
-notes.values.each do |stone|  # {gem-color => black, ...}
-  stone.each_pair do |k, v|
+notes.files.each do |file|
+  notes[file].each_pair do |k, v|
     attr = stats[k]
     attr[v] += 1
   end

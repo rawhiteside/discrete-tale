@@ -1,5 +1,5 @@
 require 'java'
-require 'yaml'
+require File.expand_path('annotations.rb')
 
 import javax.swing.JFrame
 import javax.swing.JLabel
@@ -14,7 +14,6 @@ import javax.swing.WindowConstants
 
 class MainFrame < JFrame
   include java.awt.event.ActionListener
-  ANNOTATION_FILE_NAME = File.join('orestone-pics', 'annotation.yaml')
   
   def initialize
     super("Annotate ore stones")
@@ -22,7 +21,7 @@ class MainFrame < JFrame
 
     @image_files = Dir.glob(File.join('orestone-pics', '*.png'))
 
-    @annotations = load_annotations
+    @annotations = Annotations.new
 
     panel = JPanel.new
     self.get_content_pane.add(panel)
@@ -39,7 +38,6 @@ class MainFrame < JFrame
     self.pack();
     self.setVisible(true);
   end
-
 
   def load_next_image
     loop do
@@ -63,7 +61,6 @@ class MainFrame < JFrame
     nil
   end
 
-  
   def add_image(panel)
     @filename_label = JLabel.new(' ')
     add_centered panel, @filename_label
@@ -79,14 +76,6 @@ class MainFrame < JFrame
     box.add comp
     box.add Box.create_horizontal_glue
     panel.add(box)
-  end
-
-  def load_annotations
-    if File.exist?(ANNOTATION_FILE_NAME)
-      return YAML.load_file(ANNOTATION_FILE_NAME)
-    else
-      return {}
-    end
   end
 
   def add_combo_boxes(panel)
@@ -142,7 +131,6 @@ class MainFrame < JFrame
       value[combo.action_command] = combo.selected_item
     end
     @annotations[@image_file] = value
-    File.open(ANNOTATION_FILE_NAME, 'w'){|f| YAML.dump(@annotations, f)}
   end
   
 
