@@ -1,42 +1,33 @@
 require 'java'
 require 'yaml'
 
-class Annotations
+class Annotations < Hash
   ANNOTATION_FILE_NAME = File.join('orestone-pics', 'annotation.yaml')
 
   def initialize
-    @annotations = load_annotations
+    super()
+    h = {}
+    h = YAML.load_file(ANNOTATION_FILE_NAME) if File.exist?(ANNOTATION_FILE_NAME)
+    @initializing = true
+    h.each_pair {|k, v| self.store(k, v) }
+    @initializing = false
   end
 
-  def files_matching
-    files = []
-    @annotations.each_pair do |file, notes|
-      files << file if yield notes
+  def images_matching
+    images = []
+    each_pair do |image, notes|
+      images << image if yield notes
     end
 
-    files
+    images
   end
 
-  def files
-    @annotations.keys
+  def images
+    keys
   end
 
-  def [](file)
-    @annotations[file]
-  end
-
-  def []=(file, notes)
-    @annotations[file] = notes
-    File.open(ANNOTATION_FILE_NAME, 'w'){|f| YAML.dump(@annotations, f)}
-  end
-
-  private
-  def load_annotations
-    if File.exist?(ANNOTATION_FILE_NAME)
-      return YAML.load_file(ANNOTATION_FILE_NAME)
-    else
-      return {}
-    end
+  def []=(image, notes)
+    super(image, notes)
+    File.open(ANNOTATION_FILE_NAME, 'w'){|f| YAML.dump(self, f)} unless @initializing
   end
 end
-  

@@ -3,29 +3,19 @@ require 'java'
 # XXX Figure out load-path stuff!
 require File.expand_path('annotations.rb')
 
-
-
 notes = Annotations.new
 
-stats = {
-  'Stone color' => Hash.new(0),
-  'Gem color' => Hash.new(0),
-  'Stone shape' => Hash.new(0),
-  'Gem shape' => Hash.new(0),
+table = {
+  'Stone color' => ['black', 'red', 'green', 'blue', 'cyan', 'magenta','yellow',].sort,
+  'Gem color' => ['black', 'red', 'green', 'blue', 'cyan', 'magenta','yellow',].sort,
+  'Stone shape' => ['pear', 'bowl', 'fingers', 'pillar', 'sphere', 'post', 'pancake'].sort,
+  'Gem shape' => ['post', 'hex', 'fern', 'tree', 'cube', 'spikes', 'ashtray'].sort,
 }
 
-notes.files.each do |file|
-  notes[file].each_pair do |k, v|
-    attr = stats[k]
-    attr[v] += 1
+table.each_key do |aspect|
+  puts aspect
+  table[aspect].each do |attr|
+    count = notes.images_matching {|attrs| attrs[aspect] == attr}.size
+    puts "  #{attr}: #{count}"
   end
 end
-
-stats.each_key do |k|
-  puts k
-  stats[k].each_pair do |k,v|
-    puts "  #{k}: #{v}"
-  end
-end
-
-    
