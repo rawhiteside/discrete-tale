@@ -1,4 +1,3 @@
 #!/bin/sh
 
-# Yeah, semicolons.  weird.  It's a windows thing.  export
-CLASSPATH=".;../jr;../jr/jruby-complete-1.7.21.jar;../jr/foa.jar;../jr/snakeyaml-1.9.jar" jruby stats.rb
+trun stats.rb

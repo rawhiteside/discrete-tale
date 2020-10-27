@@ -1,5 +1,5 @@
 require 'java'
-require File.expand_path('annotations.rb')
+require 'annotations'
 
 import javax.swing.JFrame
 import javax.swing.JLabel

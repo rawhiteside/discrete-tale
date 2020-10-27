@@ -1,7 +1,8 @@
 require 'java'
 
 # XXX Figure out load-path stuff!
-require File.expand_path('annotations.rb')
+require 'annotations'
+# require File.expand_path('annotations.rb')
 
 notes = Annotations.new
 

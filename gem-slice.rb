@@ -1,7 +1,8 @@
 require 'java'
 
 # XXX Figure out load-path stuff!
-require File.expand_path('annotations.rb')
+require 'abstract_mine'
+require 'annotations'
 
 import java.awt.Dimension
 import javax.swing.JFrame
@@ -20,11 +21,19 @@ import org.foa.PixelBlock
 class MainFrame < JFrame
   include java.awt.event.ActionListener
   
+  HUE_RANGES = {
+    'green' => 61..120,
+    'blue' => 241..300,
+  }
+
   def initialize
     super("Annotate ore stones")
     self.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     
-    @image_files = Annotations.new.images_matching {|attrs| attrs['Gem color'] == 'green'}
+    target = 'blue'
+    @image_files = Annotations.new.images_matching {|attrs|
+      attrs['Gem color'] == target && attrs['Stone color'] != target
+    }
     if @image_files.size == 0
       puts "No matching files"
       return
@@ -76,8 +85,28 @@ class MainFrame < JFrame
     image = @image_files.shift
     return false unless image
     @icon_label_orig.icon = ImageIcon.new(image)
-    @icon_label_stone.icon = ImageIcon.new(image)
-    @icon_label_gems.icon = ImageIcon.new(image)
+    pb_orig = PixelBlock.load_image(image)
+    rect = pb_orig.rect
+    pb_stone = PixelBlock.construct_blank(rect, 0)
+    pb_gems = PixelBlock.construct_blank(rect, 0)
+    0.upto(rect.width - 1) do |x|
+      0.upto(rect.height - 1) do |y|
+        pixel = pb_orig.get_pixel(x, y)
+        color = Color.new(pixel)
+        hsb = Color.RGBtoHSB(color.red, color.green, color.blue, nil)
+        hue = (hsb[0] * 360).to_i
+        if (pixel == 0xffffff) || (hue > 60 && hue <= 120)
+          pb_gems.set_pixel(x, y, pixel)
+          pb_stone.set_pixel(x, y, 0)
+        else
+          pb_stone.set_pixel(x, y, pixel)
+        end
+      end
+    end
+    
+
+    @icon_label_stone.icon = ImageIcon.new(pb_stone.buffered_image)
+    @icon_label_gems.icon = ImageIcon.new(pb_gems.buffered_image)
     pack();
 
     true
