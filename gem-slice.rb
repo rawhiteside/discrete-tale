@@ -1,7 +1,7 @@
 require 'java'
 
-# XXX Figure out load-path stuff!
 require 'abstract_mine'
+require 'mine-utils'
 require 'annotations'
 
 import java.awt.Dimension
@@ -20,19 +20,15 @@ import org.foa.PixelBlock
 
 class MainFrame < JFrame
   include java.awt.event.ActionListener
-  
-  HUE_RANGES = {
-    'green' => 61..120,
-    'blue' => 241..300,
-  }
 
   def initialize
     super("Annotate ore stones")
+    @gem_color = 'magenta'
+
     self.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     
-    target = 'blue'
     @image_files = Annotations.new.images_matching {|attrs|
-      attrs['Gem color'] == target && attrs['Stone color'] != target
+      attrs['Gem color'] == @gem_color && attrs['Stone color'] != @gem_color
     }
     if @image_files.size == 0
       puts "No matching files"
@@ -45,7 +41,7 @@ class MainFrame < JFrame
     self.get_content_pane.add(panel)
 
     add_images panel
-    load_next_image
+    load_next_image @gem_color
 
     add_buttons panel
 
@@ -53,19 +49,31 @@ class MainFrame < JFrame
     setVisible(true);
   end
 
+  def make_label
+    l = JLabel.new
+    l.set_border(EmptyBorder.new(10, 10, 10, 10))
+    l
+  end
+
   def add_images(panel)
-    @icon_label_orig = JLabel.new
-    @icon_label_stone = JLabel.new
-    @icon_label_gems = JLabel.new
-    box = Box.create_horizontal_box
-    box.add Box.create_rigid_area(Dimension.new(5, 0))
-    box.add @icon_label_orig
-    box.add Box.create_rigid_area(Dimension.new(5, 0))
-    box.add @icon_label_stone
-    box.add Box.create_rigid_area(Dimension.new(5, 0))
-    box.add @icon_label_gems
-    box.add Box.create_rigid_area(Dimension.new(5, 0))
-    panel.add box
+    @image_both = make_label
+    @image_both2 = make_label
+    @image_stone = make_label
+    @image_gems = make_label
+
+    hbox = Box.create_horizontal_box
+    both_box = Box.create_vertical_box
+    hbox.add(both_box)
+    stone_box = Box.create_vertical_box
+    hbox.add(stone_box)
+    gem_box = Box.create_vertical_box
+    hbox.add(gem_box)
+    
+    both_box.add @image_both
+    both_box.add @image_both2
+    stone_box.add @image_stone
+    gem_box.add @image_gems
+    panel.add hbox
   end
 
   def add_buttons(panel)
@@ -81,32 +89,19 @@ class MainFrame < JFrame
   end
   
 
-  def load_next_image
+  def load_next_image(gem_color)
     image = @image_files.shift
     return false unless image
-    @icon_label_orig.icon = ImageIcon.new(image)
-    pb_orig = PixelBlock.load_image(image)
-    rect = pb_orig.rect
-    pb_stone = PixelBlock.construct_blank(rect, 0)
-    pb_gems = PixelBlock.construct_blank(rect, 0)
-    0.upto(rect.width - 1) do |x|
-      0.upto(rect.height - 1) do |y|
-        pixel = pb_orig.get_pixel(x, y)
-        color = Color.new(pixel)
-        hsb = Color.RGBtoHSB(color.red, color.green, color.blue, nil)
-        hue = (hsb[0] * 360).to_i
-        if (pixel == 0xffffff) || (hue > 60 && hue <= 120)
-          pb_gems.set_pixel(x, y, pixel)
-          pb_stone.set_pixel(x, y, 0)
-        else
-          pb_stone.set_pixel(x, y, pixel)
-        end
-      end
-    end
+    @image_both.icon = ImageIcon.new(image)
+    pb_both = PixelBlock.load_image(image)
+    pb_stone = PixelBlock.new(pb_both)
+    pb_gems = MineUtils.slice_gems(pb_stone, gem_color)
+
+    @image_stone.icon = ImageIcon.new(pb_stone.buffered_image)
+    @image_gems.icon = ImageIcon.new(pb_gems.buffered_image)
+
     
 
-    @icon_label_stone.icon = ImageIcon.new(pb_stone.buffered_image)
-    @icon_label_gems.icon = ImageIcon.new(pb_gems.buffered_image)
     pack();
 
     true
@@ -117,7 +112,7 @@ class MainFrame < JFrame
     when 'Exit'
       dispose
     when 'Next'
-      dispose unless load_next_image
+      dispose unless load_next_image @gem_color
     end
   end
 end
