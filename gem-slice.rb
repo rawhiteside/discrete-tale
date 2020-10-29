@@ -3,8 +3,10 @@ require 'java'
 require 'abstract_mine'
 require 'mine-utils'
 require 'annotations'
+require 'convexhull'
 
 import java.awt.Dimension
+import java.awt.Polygon
 import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.imageio.ImageIO
@@ -57,7 +59,7 @@ class MainFrame < JFrame
 
   def add_images(panel)
     @image_both = make_label
-    @image_both2 = make_label
+    @image_both_hull = make_label
     @image_stone = make_label
     @image_gems = make_label
 
@@ -70,7 +72,7 @@ class MainFrame < JFrame
     hbox.add(gem_box)
     
     both_box.add @image_both
-    both_box.add @image_both2
+    both_box.add @image_both_hull
     stone_box.add @image_stone
     gem_box.add @image_gems
     panel.add hbox
@@ -88,6 +90,16 @@ class MainFrame < JFrame
     panel.add box
   end
   
+  def points_matching(pb)
+    points = []
+    0.upto(pb.width-1) do |x|
+      0.upto(pb.height-1) do |y|
+        points << Point.new(x, y) if yield pb.get_pixel(x, y)
+      end
+    end
+
+    points
+  end
 
   def load_next_image(gem_color)
     image = @image_files.shift
@@ -100,7 +112,19 @@ class MainFrame < JFrame
     @image_stone.icon = ImageIcon.new(pb_stone.buffered_image)
     @image_gems.icon = ImageIcon.new(pb_gems.buffered_image)
 
-    
+    # Draw convex hull around image.
+    points = points_matching(pb_both) {|pixel| pixel != 0}
+    hull = ConvexHull.calculate(points)
+    x, y = [], []
+    hull.each do |pt|
+      x << pt.x
+      y << pt.y
+    end
+    pb_both_hull = PixelBlock.new(pb_both)
+    graphics = pb_both_hull.buffered_image.graphics
+    graphics.color = Color::WHITE
+    graphics.draw_polygon(x.to_java(:int), y.to_java(:int), x.size)
+    @image_both_hull.icon = ImageIcon.new(pb_both_hull.buffered_image)
 
     pack();
 
