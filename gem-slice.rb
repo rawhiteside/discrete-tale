@@ -90,40 +90,22 @@ class MainFrame < JFrame
     panel.add box
   end
   
-  def points_matching(pb)
-    points = []
-    0.upto(pb.width-1) do |x|
-      0.upto(pb.height-1) do |y|
-        points << Point.new(x, y) if yield pb.get_pixel(x, y)
-      end
-    end
-
-    points
-  end
-
   def load_next_image(gem_color)
     image = @image_files.shift
     return false unless image
     @image_both.icon = ImageIcon.new(image)
     pb_both = PixelBlock.load_image(image)
     pb_stone = PixelBlock.new(pb_both)
-    pb_gems = MineUtils.slice_gems(pb_stone, gem_color)
+    pb_gems = MinePixelBlock.new(pb_stone).slice_gems(gem_color)
 
     @image_stone.icon = ImageIcon.new(pb_stone.buffered_image)
     @image_gems.icon = ImageIcon.new(pb_gems.buffered_image)
 
+    
     # Draw convex hull around image.
-    points = points_matching(pb_both) {|pixel| pixel != 0}
-    hull = ConvexHull.calculate(points)
-    x, y = [], []
-    hull.each do |pt|
-      x << pt.x
-      y << pt.y
-    end
-    pb_both_hull = PixelBlock.new(pb_both)
-    graphics = pb_both_hull.buffered_image.graphics
-    graphics.color = Color::WHITE
-    graphics.draw_polygon(x.to_java(:int), y.to_java(:int), x.size)
+    pb_both_hull = MinePixelBlock.new(pb_both)
+    pb_both_hull.draw_hull
+
     @image_both_hull.icon = ImageIcon.new(pb_both_hull.buffered_image)
 
     pack();
