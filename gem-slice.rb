@@ -19,6 +19,7 @@ import javax.swing.Box
 import javax.swing.WindowConstants
 
 import org.foa.PixelBlock
+import org.foa.Globifier
 
 class MainFrame < JFrame
   include java.awt.event.ActionListener
@@ -60,8 +61,13 @@ class MainFrame < JFrame
   def add_images(panel)
     @image_both = make_label
     @image_both_hull = make_label
+
     @image_stone = make_label
+    @image_stone_hull = make_label
+    @image_stone_backfill = make_label
+
     @image_gems = make_label
+    @image_gems_clean = make_label
 
     hbox = Box.create_horizontal_box
     both_box = Box.create_vertical_box
@@ -73,8 +79,16 @@ class MainFrame < JFrame
     
     both_box.add @image_both
     both_box.add @image_both_hull
+
+
     stone_box.add @image_stone
+    stone_box.add @image_stone_hull
+    stone_box.add @image_stone_backfill
+
+
     gem_box.add @image_gems
+    gem_box.add @image_gems_clean
+
     panel.add hbox
   end
 
@@ -95,23 +109,65 @@ class MainFrame < JFrame
     return false unless image
     @image_both.icon = ImageIcon.new(image)
     pb_both = PixelBlock.load_image(image)
-    pb_stone = PixelBlock.new(pb_both)
-    pb_gems = MinePixelBlock.new(pb_stone).slice_gems(gem_color)
+    pb_stone = MinePixelBlock.new(pb_both)
+    pb_gems = pb_stone.slice_gems(gem_color)
+    pb_stone = cleanup(pb_stone)
 
     @image_stone.icon = ImageIcon.new(pb_stone.buffered_image)
     @image_gems.icon = ImageIcon.new(pb_gems.buffered_image)
 
-    
     # Draw convex hull around image.
     pb_both_hull = MinePixelBlock.new(pb_both)
     pb_both_hull.draw_hull
-
     @image_both_hull.icon = ImageIcon.new(pb_both_hull.buffered_image)
+
+    # Draw convex hull around image.
+    mpb_stone_hull = MinePixelBlock.new(pb_stone)
+    mpb_stone_hull.draw_hull
+    @image_stone_hull.icon = ImageIcon.new(mpb_stone_hull.buffered_image)
+
+    # Clean up gem view.
+    mpb_gems_clean = cleanup(pb_gems)
+    @image_gems_clean.icon = ImageIcon.new(mpb_gems_clean.buffered_image)
+
+    mpb_stone_backfill = backfill_gems(pb_stone, pb_gems)
+    @image_stone_backfill.icon = ImageIcon.new(mpb_stone_backfill.buffered_image)
 
     pack();
 
     true
   end
+
+  def cleanup(pb)
+    clean = MinePixelBlock.new(pb)
+    globs = Globifier.globify(pb, 40000, 0)
+    globs.each do |g|
+      next if g.size > 50
+      g.each {|p| clean.set_pixel(p, 0)}
+    end
+
+    clean
+  end
+
+  # Return a new image with gems inside the stone hull copied back in.
+  def backfill_gems(stone, gems)
+    backfill = MinePixelBlock.new(stone)
+    points = stone.points_matching {|pixel| pixel != 0}
+    poly = ConvexHull.new(points)
+    0.upto(gems.width-1) do |x|
+      0.upto(gems.height-1) do |y|
+        pixel = gems.get_pixel(x, y)
+        if pixel != 0
+          if poly.contains(x, y)
+            backfill.set_pixel(x, y, pixel) 
+          end
+        end
+      end
+    end
+
+    backfill
+  end
+
 
   def actionPerformed(e)
     case e.action_command

@@ -3,7 +3,7 @@ require 'java'
 import java.awt.Color
 import org.foa.PixelBlock
 
-# Parking methods here as I sort out mining. 
+# Holds some image stuff for mining fooling around. 
 class MinePixelBlock < PixelBlock
   
   HUE_RANGES = {
@@ -29,15 +29,10 @@ class MinePixelBlock < PixelBlock
 
   def draw_hull
     points = points_matching {|pixel| pixel != 0}
-    hull = ConvexHull.calculate(points)
-    x, y = [], []
-    hull.each do |pt|
-      x << pt.x
-      y << pt.y
-    end
+    hull_poly = ConvexHull.new(points)
     graphics = buffered_image.graphics
     graphics.color = Color::WHITE
-    graphics.draw_polygon(x.to_java(:int), y.to_java(:int), x.size)
+    graphics.draw_polygon(hull_poly)
   end
 
   def slice_gems(color_name)
