@@ -1,5 +1,7 @@
 require 'java'
 
+require 'square_with_radius'
+
 import java.awt.Color
 import org.foa.PixelBlock
 
@@ -15,7 +17,13 @@ class MinePixelBlock < PixelBlock
     'red' => 301..360,
   }
   
+  public
+  def image_points
+    @image_points ||= points_matching {|pixel| pixel != 0}
+  end
+
   # return array of points with colors matching the provided block.
+  public
   def points_matching
     points = []
     0.upto(width-1) do |x|
@@ -27,14 +35,35 @@ class MinePixelBlock < PixelBlock
     points
   end
 
+  public
   def draw_hull
-    points = points_matching {|pixel| pixel != 0}
-    hull_poly = ConvexHull.new(points)
     graphics = buffered_image.graphics
     graphics.color = Color::WHITE
-    graphics.draw_polygon(hull_poly)
+    graphics.draw_polygon(hull)
   end
 
+  def hull; @hull ||= ConvexHull.new(image_points); end
+
+  def centroid; @centroid ||= compute_centroid; end
+
+  private
+  def compute_centroid
+    xsum = ysum = 0
+    image_points.each do |pt|
+      ysum += pt.y
+      xsum += pt.x
+    end
+
+    Point.new(xsum/npoints, ysum/npoints)
+  end
+  
+
+  public
+  def gem_color
+    
+  end
+
+  public
   def slice_gems(color_name)
     r = rect
     pb_gems = PixelBlock.construct_blank(r, 0)

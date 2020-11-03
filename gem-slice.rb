@@ -31,7 +31,9 @@ class MainFrame < JFrame
     self.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     
     @image_files = Annotations.new.images_matching {|attrs|
-      attrs['Gem color'] == @gem_color && attrs['Stone color'] != @gem_color
+      attrs['Stone color'] != attrs['Gem color'] &&
+        attrs['Gem color'] != 'yellow' &&
+        attrs['Gem shape'] == 'fern'
     }
     if @image_files.size == 0
       puts "No matching files"
@@ -119,12 +121,17 @@ class MainFrame < JFrame
     # Draw convex hull around image.
     pb_both_hull = MinePixelBlock.new(pb_both)
     pb_both_hull.draw_hull
+    area_both = pb_both_hull.hull.area
+    puts "Both: #{area_both}"
     @image_both_hull.icon = ImageIcon.new(pb_both_hull.buffered_image)
 
     # Draw convex hull around image.
     mpb_stone_hull = MinePixelBlock.new(pb_stone)
     mpb_stone_hull.draw_hull
+    area_stone = mpb_stone_hull.hull.area
+    puts "Stone: #{area_stone}"
     @image_stone_hull.icon = ImageIcon.new(mpb_stone_hull.buffered_image)
+    puts "Ratio: #{area_stone.to_f / area_both}"
 
     # Clean up gem view.
     mpb_gems_clean = cleanup(pb_gems)
